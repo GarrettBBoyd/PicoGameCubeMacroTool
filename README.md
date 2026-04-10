@@ -9,11 +9,11 @@ Originally built for Pokémon shiny hunting automation, but works for any GameCu
 ## Features
 
 - **Transparent passthrough** — controller input forwarded to console at full speed via dual-core PIO; zero added latency during normal play
-- **BLE scripting** — connect from a PC via Bluetooth LE using the included Python app
+- **BLE scripting** — connect from a PC (Python desktop app) via Bluetooth LE
 - **Script overlay** — during playback, script button presses are OR'd on top of live controller input; you keep full control
 - **WaveBird support** — detects standard wired and WaveBird wireless controllers
 - **Script storage** — up to 256 steps per script, each with delay, buttons, and analog stick position
-- **Named scripts** — save/load scripts as JSON
+- **Named scripts** — save/load scripts as JSON on PC
 
 ---
 
