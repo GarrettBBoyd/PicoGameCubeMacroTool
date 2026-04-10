@@ -1,0 +1,12 @@
+// shiny_tool.gatt - BLE GATT service definition
+// Garrett Boyd (concept) & Claude/Anthropic (engineering) · opus-4-6 · April 2026
+
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Shiny Hunting Assistant Tool"
+CHARACTERISTIC, GAP_APPEARANCE, READ, 00 00
+
+PRIMARY_SERVICE, GATT_SERVICE
+CHARACTERISTIC, GATT_DATABASE_HASH, READ,
+
+// Nordic UART Service for bidirectional data transfer
+#import <nordic_spp_service.gatt>

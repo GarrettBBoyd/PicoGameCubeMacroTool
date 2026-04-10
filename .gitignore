@@ -1,0 +1,34 @@
+# Build artifacts
+firmware/build/
+builds/*.uf2.old
+
+# SDK (too large — clone separately)
+pico-sdk/
+
+# Android app (maintained separately)
+android/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+*.DS_Store
+*.CS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / temp
+*.log
+build_stdout.txt
+build_stderr.txt
+build_log.txt
