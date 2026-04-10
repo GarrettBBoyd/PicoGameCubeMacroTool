@@ -121,7 +121,7 @@ pip install bleak
 
 ## BLE Protocol
 
-The Pico advertises as **"Shiny Hunting Assistant Tool"** using the Nordic UART Service (NUS).
+The Pico advertises as **"GameCubeMacroTool"** using the Nordic UART Service (NUS).
 
 | Command | Byte | Description |
 |---------|------|-------------|

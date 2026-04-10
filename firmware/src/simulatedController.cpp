@@ -1,5 +1,5 @@
 // simulatedController.cpp - Controller state aggregation with script overlay
-// Originally from pico-crossing, stripped and reworked for Shiny Hunting Assistant Tool
+// Originally from pico-crossing, stripped and reworked for GameCubeMacroTool
 // Garrett Boyd (concept) & Claude/Anthropic (engineering) · opus-4-6 · April 2026
 #include "simulatedController.hpp"
 #include "script.hpp"

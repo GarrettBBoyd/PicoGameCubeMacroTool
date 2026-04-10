@@ -1,5 +1,5 @@
 // script.hpp - Script engine protocol and data structures
-// Part of the Shiny Hunting Assistant Tool — Garrett Boyd (concept) & Claude/Anthropic (engineering)
+// Part of the GameCubeMacroTool — Garrett Boyd (concept) & Claude/Anthropic (engineering)
 // Claude · opus-4-6 · April 2026
 #pragma once
 

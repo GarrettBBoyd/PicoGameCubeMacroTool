@@ -1,5 +1,5 @@
 // ble.cpp - BLE connectivity using Nordic UART Service
-// Part of the Shiny Hunting Assistant Tool — Garrett Boyd (concept) & Claude/Anthropic (engineering)
+// Part of the GameCubeMacroTool — Garrett Boyd (concept) & Claude/Anthropic (engineering)
 // Claude · opus-4-6 · April 2026
 #include "ble.hpp"
 #include "script.hpp"
@@ -33,13 +33,11 @@ static const uint8_t adv_data[] = {
 };
 static const uint8_t adv_data_len = sizeof(adv_data);
 
-// Scan response: complete local name
+// Scan response: complete local name ("GameCubeMacroTool" = 17 chars, +1 type byte = 18)
 static const uint8_t scan_resp_data[] = {
-    29, 0x09,
-    'S','h','i','n','y',' ',
-    'H','u','n','t','i','n','g',' ',
-    'A','s','s','i','s','t','a','n','t',' ',
-    'T','o','o','l',
+    18, 0x09,
+    'G','a','m','e','C','u','b','e',
+    'M','a','c','r','o','T','o','o','l',
 };
 static const uint8_t scan_resp_data_len = sizeof(scan_resp_data);
 

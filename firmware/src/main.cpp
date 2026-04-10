@@ -1,4 +1,4 @@
-// main.cpp - Entry point for Shiny Hunting Assistant Tool firmware
+// main.cpp - Entry point for GameCubeMacroTool firmware
 // Originally from pico-crossing, stripped and extended with BLE
 // Garrett Boyd (concept) & Claude/Anthropic (engineering) · opus-4-6 · April 2026
 #include "types.hpp"
