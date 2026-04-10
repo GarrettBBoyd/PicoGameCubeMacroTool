@@ -5,8 +5,9 @@ builds/*.uf2.old
 # SDK (too large — clone separately)
 pico-sdk/
 
-# Android app (maintained separately)
+# Not included
 android/
+docs/
 
 # Python
 __pycache__/
@@ -32,3 +33,4 @@ desktop.ini
 build_stdout.txt
 build_stderr.txt
 build_log.txt
+.claude/

@@ -1,6 +1,6 @@
 # PicoGameCubeMacroTool
 
-A Raspberry Pi Pico 2 W–based GameCube controller passthrough with Bluetooth macro scripting. Plug it inline between a GameCube controller and console — your physical controller works as normal, and you can upload timed button-input scripts over BLE from a phone or PC to play back automatically (alongside your controller, not instead of it).
+A Raspberry Pi Pico 2 W–based GameCube controller passthrough with Bluetooth macro scripting. Plug it inline between a GameCube controller and console — your physical controller works as normal, and you can upload timed button-input scripts over BLE from a PC to play back automatically (alongside your controller, not instead of it).
 
 Originally built for Pokémon shiny hunting automation, but works for any GameCube game that benefits from repeatable button sequences.
 
@@ -9,11 +9,11 @@ Originally built for Pokémon shiny hunting automation, but works for any GameCu
 ## Features
 
 - **Transparent passthrough** — controller input forwarded to console at full speed via dual-core PIO; zero added latency during normal play
-- **BLE scripting** — connect from a phone (Android app) or PC (Python desktop app) via Bluetooth LE
+- **BLE scripting** — connect from a PC via Bluetooth LE using the included Python app
 - **Script overlay** — during playback, script button presses are OR'd on top of live controller input; you keep full control
 - **WaveBird support** — detects standard wired and WaveBird wireless controllers
 - **Script storage** — up to 256 steps per script, each with delay, buttons, and analog stick position
-- **Named scripts** — save/load scripts as JSON on phone or PC
+- **Named scripts** — save/load scripts as JSON
 
 ---
 
@@ -24,7 +24,7 @@ Originally built for Pokémon shiny hunting automation, but works for any GameCu
 | Part | Description | Source |
 |------|-------------|--------|
 | Raspberry Pi Pico 2 W | RP2350 + CYW43439 BLE/WiFi | [DigiKey SC1633](https://www.digikey.com/en/products/detail/raspberry-pi/SC1633/25862726) |
-| 1kΩ resistor (×2) | Signal level / pull | [DigiKey CF14JT1K00](https://www.digikey.com/en/products/detail/stackpole-electronics-inc/CF14JT1K00/1741314) |
+| 1kΩ resistor | Signal line | [DigiKey CF14JT1K00](https://www.digikey.com/en/products/detail/stackpole-electronics-inc/CF14JT1K00/1741314) |
 | 1N5819 Schottky diode | Voltage protection | [DigiKey 1N5819](https://www.digikey.com/en/products/detail/taiwan-semiconductor-corporation/1N5819/7357079) |
 | GC controller socket | Console-side connector | [AliExpress](https://www.aliexpress.us/item/3256809038245775.html) |
 | GC controller plug | Controller-side connector | [AliExpress](https://www.aliexpress.us/item/3256809767251472.html) |
@@ -33,10 +33,6 @@ Originally built for Pokémon shiny hunting automation, but works for any GameCu
 ### PCB
 
 Gerber files are included in `Gerbers.zip`. Order from any PCB fab (JLCPCB, PCBWay, OSHPark, etc.).
-
-![PCB Front](docs/PCB%20FRONT.png)
-![PCB Back](docs/PCB%20BACK.png)
-![KiCad View](docs/PCB%20KICAD.PNG)
 
 ### Enclosure
 
@@ -49,34 +45,39 @@ A work-in-progress shell design is included as `GCMacroTool Shell WIP.stl`. Prin
 ```
 PicoGameCubeMacroTool/
 ├── firmware/               # C++ firmware for Pico 2 W
-│   ├── src/                # Source files
-│   │   ├── main.cpp        # Entry point, core init
+│   ├── src/
+│   │   ├── main.cpp
 │   │   ├── ble.cpp/hpp     # BLE (Nordic UART Service)
 │   │   ├── script.cpp/hpp  # Script engine & playback
 │   │   ├── device.cpp/hpp  # Controller detection (wired + WaveBird)
 │   │   ├── simulatedController.cpp/hpp  # Passthrough + overlay
 │   │   ├── joybus.cpp/hpp  # Joybus protocol (PIO)
-│   │   ├── controller.pio  # PIO for console-side Joybus
-│   │   ├── joybus.pio      # PIO for controller-side polling
-│   │   ├── types.hpp       # Shared types and device ID constants
-│   │   ├── gcReport.hpp    # GC controller report struct
-│   │   ├── shiny_tool.gatt # BLE GATT profile (Nordic UART)
+│   │   ├── controller.pio
+│   │   ├── joybus.pio
+│   │   ├── types.hpp
+│   │   ├── gcReport.hpp
+│   │   ├── shiny_tool.gatt
 │   │   └── btstack_config.h
 │   ├── CMakeLists.txt
 │   ├── pico_sdk_import.cmake
-│   └── licenses/           # Third-party license notices
+│   └── licenses/
 ├── app/
-│   └── shiny_tool.py       # Python desktop app (tkinter + bleak BLE)
+│   └── Macro_Tool.py       # Python desktop app (tkinter + bleak BLE)
 ├── tools/
-│   ├── bin2uf2.py          # Convert .bin → .uf2 for flashing
-│   └── ble_test.py         # Standalone BLE protocol test script
-├── builds/
-│   └── PicoGameCubeMacroTool.uf2   # Pre-built firmware (flash directly)
-├── docs/                   # PCB images + Pico 2 W datasheet
-├── Gerbers.zip             # PCB manufacturing files
-├── GCMacroTool Shell WIP.stl  # 3D printable enclosure (WIP)
-└── LICENSE                 # GPL-3.0
+│   ├── bin2uf2.py          # Convert .bin → .uf2
+│   └── ble_test.py         # Standalone BLE protocol test
+├── Gerbers.zip
+├── GCMacroTool Shell WIP.stl
+└── LICENSE
 ```
+
+---
+
+## Flashing
+
+Download the latest `PicoGameCubeMacroTool.uf2` from the [Releases](../../releases) page.
+
+Hold **BOOTSEL** on the Pico while plugging in USB — it mounts as a drive. Copy the `.uf2` onto it.
 
 ---
 
@@ -87,7 +88,7 @@ PicoGameCubeMacroTool/
 - [Raspberry Pi Pico SDK](https://github.com/raspberrypi/pico-sdk) — clone alongside this repo
 - ARM GCC toolchain 13+ (`arm-none-eabi-gcc`)
 - CMake 3.13+
-- Python 3 (for `bin2uf2.py`)
+- Python 3
 
 ### Build
 
@@ -98,17 +99,13 @@ cmake -DPICO_SDK_PATH=../../pico-sdk ..
 cmake --build . --target PicoGameCubeMacroTool
 ```
 
-> **Windows note:** The GCC 12 linker crashes on this project. Use ARM GCC 13+ for linking, or use the pre-built UF2 in `builds/`.
-
-### Flash
-
-Hold BOOTSEL on the Pico while plugging in USB — it mounts as a drive. Copy `PicoGameCubeMacroTool.uf2` onto it (or the pre-built one from `builds/`).
+> **Windows note:** The GCC 12 linker crashes on this project. Use ARM GCC 13+ for linking, or use the pre-built UF2 from Releases.
 
 ---
 
 ## Desktop App (Python)
 
-`app/shiny_tool.py` — tkinter UI with BLE support.
+`app/Macro_Tool.py` — tkinter UI with BLE support.
 
 **Requirements:**
 ```
@@ -119,7 +116,6 @@ pip install bleak
 - Scan and connect to the Pico over BLE
 - Create, edit, save, and load scripts (JSON)
 - Upload scripts to the Pico and control playback
-- Scripts auto-saved with `.json` extension
 
 ---
 
@@ -145,26 +141,23 @@ The Pico advertises as **"Shiny Hunting Assistant Tool"** using the Nordic UART 
 ```
 
 **Button flags:**
-| Button | Flag |
-|--------|------|
-| A | `0x0001` |
-| B | `0x0002` |
-| X | `0x0004` |
-| Y | `0x0008` |
-| Start | `0x0010` |
-| D-Left | `0x0020` |
-| D-Right | `0x0040` |
-| D-Down | `0x0080` |
-| D-Up | `0x0100` |
-| Z | `0x0200` |
-| R | `0x0400` |
-| L | `0x0800` |
+
+| Button | Flag | Button | Flag |
+|--------|------|--------|------|
+| A | `0x0001` | D-Up | `0x0100` |
+| B | `0x0002` | D-Down | `0x0080` |
+| X | `0x0004` | D-Left | `0x0020` |
+| Y | `0x0008` | D-Right | `0x0040` |
+| Start | `0x0010` | Z | `0x0200` |
+| L | `0x0800` | R | `0x0400` |
 
 ---
 
-## Credits
+## Credits & Special Thanks
 
-Firmware architecture based on [pico-crossing](https://github.com/arntsonl/pico-crossing) by arntsonl (GPL-3.0). Joybus PIO adapted from retro-pico-switch (MIT).
+Special thanks to **[hunterirving](https://github.com/hunterirving)** whose project **[pico-crossing](https://github.com/hunterirving/pico-crossing)** was the direct inspiration and foundation for this tool. The Joybus passthrough architecture, PIO implementation, and controller handling all stem from that work.
+
+Additional thanks to the retro-pico-switch project for the Joybus PIO approach (MIT licensed).
 
 Concept: Garrett Boyd  
 Engineering: Claude / Anthropic (opus-4-6, April 2026)
