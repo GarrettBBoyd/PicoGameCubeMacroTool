@@ -1,6 +1,6 @@
 # PicoGameCubeMacroTool
 
-A Raspberry Pi Pico 2 W–based GameCube controller passthrough with Bluetooth macro scripting. Plug it inline between a GameCube controller and console — your physical controller works as normal, and you can upload timed button-input scripts over BLE from a phone or PC to play back automatically (alongside your controller, not instead of it).
+A Raspberry Pi Pico 2 W–based GameCube controller passthrough with Bluetooth macro scripting. Plug it inline between a GameCube controller and console — your physical controller works as normal, and you can upload timed button-input scripts over BLE from a PC to play back automatically (alongside your controller, not instead of it).
 
 Originally built for Pokémon shiny hunting automation, but works for any GameCube game that benefits from repeatable button sequences.
 
@@ -9,11 +9,11 @@ Originally built for Pokémon shiny hunting automation, but works for any GameCu
 ## Features
 
 - **Transparent passthrough** — controller input forwarded to console at full speed via dual-core PIO; zero added latency during normal play
-- **BLE scripting** — connect from a phone (Android app) or PC (Python desktop app) via Bluetooth LE
+- **BLE scripting** — connect from a PC (Python desktop app) via Bluetooth LE
 - **Script overlay** — during playback, script button presses are OR'd on top of live controller input; you keep full control
 - **WaveBird support** — detects standard wired and WaveBird wireless controllers
 - **Script storage** — up to 256 steps per script, each with delay, buttons, and analog stick position
-- **Named scripts** — save/load scripts as JSON on phone or PC
+- **Named scripts** — save/load scripts as JSON on PC
 
 ---
 
