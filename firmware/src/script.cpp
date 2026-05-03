@@ -12,9 +12,19 @@ static ScriptStep script_steps[MAX_SCRIPT_STEPS];
 static uint16_t script_num_steps = 0;
 
 // Playback state
-static uint8_t playback_state = PLAYBACK_IDLE;
-static uint16_t playback_index = 0;
-static absolute_time_t step_start_time;
+// volatile because they're modified from the timer ISR and read from main loop
+static volatile uint8_t  playback_state = PLAYBACK_IDLE;
+static volatile uint16_t playback_index = 0;
+static volatile bool     playback_finished_flag = false;  // ISR sets this; main loop logs
+
+// Hardware timer alarm — replaces polling-based time checks for jitter-free playback
+static alarm_id_t playback_alarm = 0;
+
+// Hold duration (ms) — how long buttons stay pressed each step
+#define PLAYBACK_HOLD_MS 50
+
+// Forward declaration (defined below script_init)
+static void cancel_playback_alarm();
 
 // Upload buffer for multi-packet script data
 static uint8_t upload_buf[2 + MAX_SCRIPT_STEPS * 8]; // cmd + num_steps(2) + step data
@@ -82,6 +92,7 @@ static void handle_upload(const uint8_t *data, uint16_t len) {
     // Complete upload - parse steps
     // Stop any current playback
     playback_state = PLAYBACK_IDLE;
+    cancel_playback_alarm();
     script_num_steps = num_steps;
 
     for (uint16_t i = 0; i < num_steps; i++) {
@@ -103,12 +114,54 @@ static void handle_upload(const uint8_t *data, uint16_t len) {
     send_ack(STATUS_OK);
 }
 
+// Hardware timer alarm callback — runs in IRQ context.
+// Returns next fire delay (microseconds) relative to the previous fire time:
+//   - Positive value: reschedule N µs after this firing → deterministic, no drift
+//   - Zero: cancel the alarm (we're done)
+// Keep this short and avoid printf / blocking calls — runs in interrupt context.
+static int64_t playback_alarm_cb(alarm_id_t /*id*/, void* /*user*/) {
+    uint8_t state = playback_state;
+
+    if (state == PLAYBACK_IDLE) {
+        return 0;  // playback was stopped externally
+    }
+
+    if (state == PLAYBACK_WAITING) {
+        // Delay elapsed → press buttons for this step
+        playback_state = PLAYBACK_RUNNING;
+        return (int64_t)PLAYBACK_HOLD_MS * 1000;  // schedule release exactly N ms later
+    }
+
+    if (state == PLAYBACK_RUNNING) {
+        // Hold elapsed → advance to next step (or finish)
+        uint16_t next = playback_index + 1;
+        if (next >= script_num_steps) {
+            playback_state = PLAYBACK_IDLE;
+            playback_finished_flag = true;
+            return 0;  // cancel — no more steps
+        }
+        playback_index = next;
+        playback_state = PLAYBACK_WAITING;
+        return (int64_t)script_steps[next].delay_ms * 1000;  // wait next delay
+    }
+
+    return 0;  // unknown state → stop
+}
+
+static void cancel_playback_alarm() {
+    if (playback_alarm > 0) {
+        cancel_alarm(playback_alarm);
+        playback_alarm = 0;
+    }
+}
+
 void script_init() {
     script_num_steps = 0;
     playback_state = PLAYBACK_IDLE;
     playback_index = 0;
     upload_in_progress = false;
     upload_buf_len = 0;
+    cancel_playback_alarm();
 }
 
 void script_process_ble_data(const uint8_t *data, uint16_t len) {
@@ -145,10 +198,18 @@ void script_process_ble_data(const uint8_t *data, uint16_t len) {
                 printf("[Script] No script loaded\n");
                 send_ack(STATUS_ERROR);
             } else {
-                printf("[Script] Starting playback (%d steps)\n", script_num_steps);
+                printf("[Script] Starting playback (%d steps) — hardware-timer mode\n",
+                       script_num_steps);
+                cancel_playback_alarm();              // belt-and-suspenders cleanup
+                playback_finished_flag = false;
                 playback_index = 0;
                 playback_state = PLAYBACK_WAITING;
-                step_start_time = get_absolute_time();
+                // Schedule first wakeup at step[0].delay_ms — the ISR self-reschedules
+                // for every subsequent transition, so timing is purely hardware-driven.
+                uint32_t first_delay_ms = script_steps[0].delay_ms;
+                if (first_delay_ms == 0) first_delay_ms = 1;  // alarm needs >0
+                playback_alarm = add_alarm_in_ms(first_delay_ms,
+                                                 playback_alarm_cb, nullptr, true);
                 send_ack(STATUS_OK);
             }
             break;
@@ -156,6 +217,7 @@ void script_process_ble_data(const uint8_t *data, uint16_t len) {
         case CMD_STOP_PLAYBACK:
             printf("[Script] Stopping playback\n");
             playback_state = PLAYBACK_IDLE;
+            cancel_playback_alarm();
             send_ack(STATUS_OK);
             break;
 
@@ -181,60 +243,43 @@ bool script_get_report(GCReport &report) {
 
 void script_overlay_report(GCReport &report) {
     // Overlay script inputs on top of the existing controller report.
-    // During WAITING: controller passthrough works normally (no overlay).
-    // During RUNNING: script button presses are OR'd with controller buttons,
-    //                 and script stick positions override only if non-center.
-
-    if (playback_state == PLAYBACK_IDLE) return;
-
-    absolute_time_t now = get_absolute_time();
-
-    if (playback_state == PLAYBACK_WAITING) {
-        int64_t elapsed_ms = absolute_time_diff_us(step_start_time, now) / 1000;
-        if (elapsed_ms < (int64_t)script_steps[playback_index].delay_ms) {
-            // Still waiting — controller passthrough continues unchanged
-            return;
-        }
-        // Delay elapsed, start executing this step
-        playback_state = PLAYBACK_RUNNING;
-        step_start_time = now;
+    //
+    // The hardware timer ISR (playback_alarm_cb) advances state at exact times.
+    // This function is a pure state-reader — no time math, no jitter — just:
+    //   IDLE / WAITING → no overlay (passthrough only)
+    //   RUNNING        → OR script buttons onto the report, override stick if non-center
+    //
+    // Log "playback complete" lazily here (printf is unsafe from the ISR).
+    if (playback_finished_flag) {
+        playback_finished_flag = false;
+        printf("[Script] Playback complete\n");
     }
 
-    if (playback_state == PLAYBACK_RUNNING) {
-        int64_t elapsed_ms = absolute_time_diff_us(step_start_time, now) / 1000;
+    if (playback_state != PLAYBACK_RUNNING) return;
 
-        ScriptStep &step = script_steps[playback_index];
-        uint8_t buttons0 = step.buttons & 0xFF;
-        uint8_t buttons1 = (step.buttons >> 8) & 0xFF;
+    // Single 16-bit read is atomic on Cortex-M33; capture index for safe access
+    uint16_t idx = playback_index;
+    if (idx >= script_num_steps) return;  // sanity guard against ISR race
 
-        // OR script buttons with physical controller buttons
-        if (buttons0 & 0x01) report.a = 1;
-        if (buttons0 & 0x02) report.b = 1;
-        if (buttons0 & 0x04) report.x = 1;
-        if (buttons0 & 0x08) report.y = 1;
-        if (buttons0 & 0x10) report.start = 1;
-        if (buttons1 & 0x10) report.z = 1;
-        if (buttons1 & 0x40) { report.l = 1; report.analogL = 255; }
-        if (buttons1 & 0x20) { report.r = 1; report.analogR = 255; }
-        if (buttons1 & 0x01) report.dLeft = 1;
-        if (buttons1 & 0x02) report.dRight = 1;
-        if (buttons1 & 0x04) report.dDown = 1;
-        if (buttons1 & 0x08) report.dUp = 1;
+    ScriptStep &step = script_steps[idx];
+    uint8_t buttons0 = step.buttons & 0xFF;
+    uint8_t buttons1 = (step.buttons >> 8) & 0xFF;
 
-        // Override stick only if script specifies non-center position
-        if (step.stick_x != 128) report.xStick = step.stick_x;
-        if (step.stick_y != 128) report.yStick = step.stick_y;
+    // OR script buttons with physical controller buttons
+    if (buttons0 & 0x01) report.a = 1;
+    if (buttons0 & 0x02) report.b = 1;
+    if (buttons0 & 0x04) report.x = 1;
+    if (buttons0 & 0x08) report.y = 1;
+    if (buttons0 & 0x10) report.start = 1;
+    if (buttons1 & 0x10) report.z = 1;
+    if (buttons1 & 0x40) { report.l = 1; report.analogL = 255; }
+    if (buttons1 & 0x20) { report.r = 1; report.analogR = 255; }
+    if (buttons1 & 0x01) report.dLeft = 1;
+    if (buttons1 & 0x02) report.dRight = 1;
+    if (buttons1 & 0x04) report.dDown = 1;
+    if (buttons1 & 0x08) report.dUp = 1;
 
-        // Hold the button press for ~50ms then advance
-        if (elapsed_ms >= 50) {
-            playback_index++;
-            if (playback_index >= script_num_steps) {
-                printf("[Script] Playback complete\n");
-                playback_state = PLAYBACK_IDLE;
-                return;
-            }
-            playback_state = PLAYBACK_WAITING;
-            step_start_time = now;
-        }
-    }
+    // Override stick only if script specifies non-center position
+    if (step.stick_x != 128) report.xStick = step.stick_x;
+    if (step.stick_y != 128) report.yStick = step.stick_y;
 }

@@ -1,5 +1,5 @@
 """
-Shiny Hunting Assistant Tool - Desktop App
+GameCubeMacroTool - Desktop App
 Creates, edits, uploads, and plays back timing-based GameCube controller
 input scripts on a Pico 2 W via BLE (Nordic UART Service).
 
@@ -35,7 +35,7 @@ from bleak import BleakScanner, BleakClient
 
 # ─── Protocol Constants ──────────────────────────────────────────────────────
 
-DEVICE_NAME = "Shiny Hunting Assistant Tool"
+DEVICE_NAME = "GameCubeMacroTool"
 NUS_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 NUS_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
@@ -309,7 +309,7 @@ class BLEManager:
 class ShinyHuntingApp:
     def __init__(self) -> None:
         self.root = tk.Tk()
-        self.root.title("Shiny Hunting Assistant Tool - Untitled")
+        self.root.title("GameCubeMacroTool - Untitled")
         self.root.minsize(920, 680)
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -968,7 +968,7 @@ class ShinyHuntingApp:
         if self.model.filepath:
             file_info = f" ({os.path.basename(self.model.filepath)})"
         dirty = "*" if self.model.dirty else ""
-        self.root.title(f"{dirty}{script_name}{file_info} - Shiny Hunting Assistant Tool")
+        self.root.title(f"{dirty}{script_name}{file_info} - GameCubeMacroTool")
 
     def _update_button_states(self) -> None:
         has_sel = self._selected_index is not None
